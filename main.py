@@ -5,7 +5,10 @@ from dotenv import load_dotenv
 
 from aiogram import Bot, Dispatcher
 from handlers.handlers import rt
+
+from db import init_db
 #========================Инициализация======================
+init_db()
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
 dp = Dispatcher(); dp.include_router(rt)
