@@ -4,14 +4,15 @@ import os
 from dotenv import load_dotenv
 
 from aiogram import Bot, Dispatcher
-from handlers.handlers import rt
+from handlers.admin_handlers import admin_rt
+from handlers.main_handlers import rt
 
 from db import init_db
 #========================Инициализация======================
 init_db()
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
-dp = Dispatcher(); dp.include_router(rt)
+dp = Dispatcher(); dp.include_router(rt); dp.include_router(admin_rt)
 #==============Запуск==========================================
 async def main()->None:
     bot = Bot(token=TOKEN)

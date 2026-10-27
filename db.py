@@ -1,24 +1,23 @@
 import sqlite3
 
 def init_db():
-    conn = sqlite3.connect('data.db')
-    cur = conn.cursor()
-    cur.execute('''CREATE TABLE IF NOT EXISTS orders (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    client_name TEXT NOT NULL,
-    client_username TEXT NOT NULL,
-    dog_name TEXT NOT NULL,
-    date TEXT NOT NULL,
-    time TEXT NOT NULL
-    )''')
-    cur.execute('''CREATE TABLE IF NOT EXISTS services (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            price INTEGER NOT NULL
+    with sqlite3.connect('data.db') as conn:
+        cur = conn.cursor()
+        cur.execute('''CREATE TABLE IF NOT EXISTS orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        client_name TEXT NOT NULL,
+        client_username TEXT NOT NULL,
+        dog_name TEXT NOT NULL,
+        date TEXT NOT NULL,
+        time TEXT NOT NULL
         )''')
-    conn.commit()
-    cur.close()
-    conn.close()
+        cur.execute('''CREATE TABLE IF NOT EXISTS services (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                price INTEGER NOT NULL
+            )''')
+        conn.commit()
+        cur.close()
 
 def get_services():
     with sqlite3.connect('data.db') as conn:
@@ -66,26 +65,26 @@ def delete_order(id:int)->None:
         cur.close()
 
 def get_orders():
-    conn = sqlite3.connect('data.db')
-    cur = conn.cursor()
-    cur.execute('''SELECT * FROM orders''')
-    full_answer = ''
-    for row in cur.fetchall():
-        full_answer += f'''Запись номер{row[0]}:
-    Имя клиента: {row[1]}
-    Юзернейм клиента: @{row[2]}
-    Имя питомца: {row[3]}
-    Дата: {row[4]}
-    Вреня: {row[5]}:00
-
-'''
+    with sqlite3.connect('data.db') as conn:
+        cur = conn.cursor()
+        cur.execute('''SELECT * FROM orders''')
+        full_answer = ''
+        for row in cur.fetchall():
+            full_answer += f'''Запись номер {row[0]}:
+        Имя клиента: {row[1]}
+        Юзернейм клиента: @{row[2]}
+        Имя питомца: {row[3]}
+        Дата: {row[4]}
+        Время: {row[5]}:00
+    
+    '''
+        cur.close()
     return full_answer
 
 def get_ordered_time(day):
-    conn = sqlite3.connect('data.db')
-    cur = conn.cursor()
-    cur.execute('SELECT time FROM orders WHERE date = ?', (day.strip().lower(),))
-    ordered = [int(row[0]) for row in cur.fetchall()]
-    cur.close()
-    conn.close()
-    return ordered
+    with sqlite3.connect('data.db') as conn:
+        cur = conn.cursor()
+        cur.execute('SELECT time FROM orders WHERE date = ?', (day.strip().lower(),))
+        ordered = [int(row[0]) for row in cur.fetchall()]
+        cur.close()
+        return ordered
