@@ -18,7 +18,7 @@ rt = Router()
 admin_user = os.getenv('ADMIN_USERNAME') or 'Владелица студии пока не предоставила своих контактов'
 admin_chat = int(os.getenv('ADMIN_CHAT_ID'))
 work_time_start = 8
-work_time_end = 16 #часы начала и конца рабочего дня студии
+work_time_end = 16 #часы начала и конца рабочего дня студии. Везде стоит -1 т.к. я рассчитываю на то, что последняя запись может быть сделана за час до конца рабочего дня.
 
 #==============Форма для записи================================
 class Form(StatesGroup):
@@ -57,18 +57,23 @@ async def sign_up_step1(callback:CallbackQuery, state: FSMContext)->None:
 
 @rt.message(Form.dog_name)
 async def sign_up_step2(message: Message, state:FSMContext)->None:
+    if not message.text: await message.answer(text='пожалуйста, отправьте текстовое сообщение.'); return
     await state.update_data(dog_name = message.text)
-    await message.answer("Теперь укажите удобный вам день для выгула", reply_markup = date_keyboard(days_ahead=14))
+    await message.answer("Теперь укажите удобный вам день для выгула", reply_markup = date_keyboard(days_ahead=14,  work_time_start=work_time_start, work_time_end=work_time_end-1))
     await state.set_state(Form.date)
 
 @rt.callback_query(Form.date, F.data.startswith('date:'))
 async def sign_up_step3(callback:CallbackQuery, state:FSMContext)->None:
     await callback.answer()
     day = callback.data.split(':',1)[1]
+    if not free_hours(day, work_time_start, work_time_end-1):
+        await callback.message.edit_text("На эту дату свободного времени уже не осталось. Выберите другой день:",
+                                         reply_markup=date_keyboard(14, work_time_start, work_time_end-1))
+        await state.set_state(Form.date)
+        return
     await state.set_state(Form.time)
     await state.update_data(date = day)
-
-    await callback.message.edit_text("Теперь выберите удобное время:", reply_markup=time_keyboard(work_time_start=work_time_start, work_time_end=work_time_end, day= day))
+    await callback.message.edit_text("Теперь выберите удобное время:", reply_markup=time_keyboard(work_time_start=work_time_start, work_time_end=work_time_end-1, day= day))
 
 @rt.callback_query(Form.time, F.data.startswith('time:'))
 async def sign_up_step4(callback:CallbackQuery, state:FSMContext)->None:
@@ -76,12 +81,6 @@ async def sign_up_step4(callback:CallbackQuery, state:FSMContext)->None:
     time = callback.data.split(':')[1]
     await state.update_data(time = time)
     data = await state.get_data()
-    #Проверка чтобы запись не заняли одновременно
-    if int(data['time']) in get_ordered_time(data['date']):
-        await callback.message.edit_text('Это время только что заняли. Выберите другое:',
-                                         reply_markup=time_keyboard(work_time_start, work_time_end, data['date']))
-        await state.set_state(Form.time)
-        return
     insert_order(callback.from_user.full_name,callback.from_user.username or 'нет юзернейма', data['dog_name'], data['date'], data['time'])
     await callback.message.edit_text(
         f"Ваша запись:\nимя питомца: {data['dog_name']}\nдата: {data['date']}\nвремя: {data['time']}")
@@ -94,5 +93,5 @@ async def sign_up_step4(callback:CallbackQuery, state:FSMContext)->None:
                                                        f"дата: {data['date']}\n"
                                                        f"время: {data['time']}")
     except TelegramAPIError as e:
-        print('не удалось уведомить владелицу о записи')
+        print('не удалось уведомить владелицу о записи. Пожалуйста, проверьте новые записи в базе данных.')
     await state.clear()

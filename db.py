@@ -9,7 +9,8 @@ def init_db():
         client_username TEXT NOT NULL,
         dog_name TEXT NOT NULL,
         date TEXT NOT NULL,
-        time TEXT NOT NULL
+        time TEXT NOT NULL,
+        UNIQUE(date,time)
         )''')
         cur.execute('''CREATE TABLE IF NOT EXISTS services (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,12 +28,14 @@ def get_services():
         cur.close()
         return services
 
-def delete_service(id:int)->None:
+def delete_service(id: int) -> bool:
     with sqlite3.connect('data.db') as conn:
         cur = conn.cursor()
-        cur.execute('''DELETE FROM services WHERE id = ?''', (id,))
+        cur.execute('DELETE FROM services WHERE id = ?', (id,))
+        deleted = cur.rowcount > 0   # читаем до commit
         conn.commit()
         cur.close()
+    return deleted
 
 def change_service(id:int, new_name:str, new_price:int)->None:
     with sqlite3.connect('data.db') as conn:
@@ -48,14 +51,26 @@ def add_service(name:str, price:int)->None:
         conn.commit()
         cur.close()
 
-def insert_order(client_name,client_username, dog_name,date,time):
+def service_exists(id: int) -> bool:
     with sqlite3.connect('data.db') as conn:
         cur = conn.cursor()
-        cur.execute('''
-        INSERT INTO orders (client_name,client_username,dog_name,date,time)
-        VALUES (?,?,?,?,?)''',(client_name,client_username,dog_name,date,time))
-        conn.commit()
+        cur.execute('SELECT 1 FROM services WHERE id = ?', (id,))
+        found = cur.fetchone() is not None
         cur.close()
+    return found
+
+def insert_order(client_name, client_username, dog_name, date, time) -> bool:
+    with sqlite3.connect('data.db') as conn:
+        cur = conn.cursor()
+        try:
+            cur.execute('''INSERT INTO orders (client_name,client_username,dog_name,date,time)
+                           VALUES (?,?,?,?,?)''', (client_name, client_username, dog_name, date, time))
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False
+        finally:
+            cur.close()
 
 def delete_order(id:int)->None:
     with sqlite3.connect('data.db') as conn:

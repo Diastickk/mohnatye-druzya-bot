@@ -57,7 +57,7 @@ async def select_order_for_delete (callback: CallbackQuery,state:FSMContext)->No
 async def delete_selected_order (message:Message,state:FSMContext)->None:
     try:
         delete_order(int(message.text))
-    except:
+    except (ValueError, TypeError):
         await message.answer(text='Пожалуйста, введите число')
         return
     await message.answer(text=f'Запись номер {message.text} удалена!')
@@ -89,13 +89,16 @@ async def remove_service (callback: CallbackQuery, state:FSMContext)->None:
     await state.set_state(ChangeServicesState.delete_service_id)
 
 @admin_rt.message(ChangeServicesState.delete_service_id)
-async def delete_selected_service (message: Message,state:FSMContext)->None:
+async def delete_selected_service(message: Message, state: FSMContext) -> None:
     try:
-        delete_service(int(message.text))
-    except:
+        service_id = int(message.text)
+    except (ValueError, TypeError):
         await message.answer(text='Пожалуйста, введите число')
         return
-    await message.answer(text = 'услуга успешно удалена')
+    if delete_service(service_id):
+        await message.answer(text='Услуга успешно удалена')
+    else:
+        await message.answer(text=f'Услуги с номером {service_id} нет. Проверьте номер в списке.')
     await state.clear()
 
 #==============================Изменение услуги=========================================
@@ -109,16 +112,20 @@ async def select_change_service (callback: CallbackQuery, state:FSMContext)->Non
 
 @admin_rt.message(ChangeServicesState.service_id)
 async def change_selected_service_step1 (message: Message,state:FSMContext)->None:
-    await message.answer(text='Укажите новое имя услуги.')
     try:
         await state.update_data(service_id=int(message.text))
-    except:
+    except (ValueError, TypeError):
         await message.answer(text='Пожалуйста, введите число')
         return
+    if not service_exists(int(message.text)):
+        await message.answer(text=f'Услуги с номером {int(message.text)} нет. Попробуйте ещё раз.')
+        return
     await state.set_state(ChangeServicesState.service_name)
+    await message.answer(text='Укажите новое имя услуги.')
 
 @admin_rt.message(ChangeServicesState.service_name)
 async def change_selected_service_step2 (message: Message,state:FSMContext)->None:
+    if not message.text: await message.answer(text='пожалуйста, отправьте текстовое сообщение.'); return
     await message.answer(text='укажите новую цену услуги')
     await state.update_data(service_name=message.text)
     await state.set_state(ChangeServicesState.service_price)
@@ -127,7 +134,7 @@ async def change_selected_service_step2 (message: Message,state:FSMContext)->Non
 async def change_selected_service_step3 (message: Message,state:FSMContext)->None:
     try:
         await state.update_data(service_price=int(message.text))
-    except:
+    except (ValueError, TypeError):
         await message.answer(text='Пожалуйста, введите число')
         return
     data = await state.get_data()
@@ -146,6 +153,7 @@ async def add_service_step1 (callback: CallbackQuery, state:FSMContext)->None:
 
 @admin_rt.message(ChangeServicesState.add_service_name)
 async def add_service_step2 (message: Message,state:FSMContext)->None:
+    if not message.text: await message.answer(text='пожалуйста, отправьте текстовое сообщение.'); return
     await message.answer(text='Укажите цену услуги')
     await state.set_state(ChangeServicesState.add_service_price)
     await state.update_data(add_service_name=message.text)
@@ -154,8 +162,8 @@ async def add_service_step2 (message: Message,state:FSMContext)->None:
 async def add_service_step3 (message: Message,state:FSMContext)->None:
     try:
         await state.update_data(add_service_price=int(message.text))
-    except:
-        await message.answer(text='Пожалуйства введите число')
+    except (ValueError, TypeError):
+        await message.answer(text='Пожалуйста введите число')
         return
     data = await state.get_data()
     add_service(data['add_service_name'],data['add_service_price'])

@@ -1,4 +1,3 @@
-from aiogram.utils import keyboard
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
@@ -12,23 +11,51 @@ def start_keyboard():
     keyboard = InlineKeyboardMarkup(inline_keyboard=[[button1],[button2], [button3]])
     return keyboard
 
-def date_keyboard(days_ahead: int = 14):
+def free_hours(day: str, work_time_start: int, work_time_end: int) -> list[int]:
+    busy = set(get_ordered_time(day))
+    return [h for h in range(work_time_start, work_time_end + 1) if h not in busy]
+
+def date_keyboard(days_ahead: int = 14, work_time_start: int = 8, work_time_end: int = 16):
     builder = InlineKeyboardBuilder()
     today = date.today()
     for i in range(1, days_ahead + 1):
         d = today + timedelta(days=i)
-        if d.weekday() == 6:          # например, воскресенье — выходной
+        if d.weekday() == 6:
+            continue
+        if not free_hours(d.isoformat(), work_time_start, work_time_end):
             continue
         builder.button(text=d.strftime('%d.%m'), callback_data=f"date:{d.isoformat()}")
     builder.adjust(4)
     return builder.as_markup()
 
-def time_keyboard(work_time_start,work_time_end, day):
-    busy = get_ordered_time(day=day)
+def time_keyboard(work_time_start, work_time_end, day):
     builder = InlineKeyboardBuilder()
-    for hour in range(work_time_start, work_time_end + 1):
-        if hour not in busy:
-            builder.button(text=f"{hour}:00", callback_data=f"time:{hour}")
+    for hour in free_hours(day, work_time_start, work_time_end):
+        builder.button(text=f"{hour}:00", callback_data=f"time:{hour}")
+    builder.adjust(3)
+    return builder.as_markup()
+
+def free_hours(day: str, work_time_start: int, work_time_end: int) -> list[int]:
+    busy = set(get_ordered_time(day))
+    return [h for h in range(work_time_start, work_time_end + 1) if h not in busy]
+
+def date_keyboard(days_ahead: int = 14, work_time_start: int = 8, work_time_end: int = 16):
+    builder = InlineKeyboardBuilder()
+    today = date.today()
+    for i in range(1, days_ahead + 1):
+        d = today + timedelta(days=i)
+        if d.weekday() == 6:  # воскресенье — выходной
+            continue
+        if not free_hours(d.isoformat(), work_time_start, work_time_end):
+            continue  # все часы заняты, день не показываем
+        builder.button(text=d.strftime('%d.%m'), callback_data=f"date:{d.isoformat()}")
+    builder.adjust(4)
+    return builder.as_markup()
+
+def time_keyboard(work_time_start, work_time_end, day):
+    builder = InlineKeyboardBuilder()
+    for hour in free_hours(day, work_time_start, work_time_end):
+        builder.button(text=f"{hour}:00", callback_data=f"time:{hour}")
     builder.adjust(3)
     return builder.as_markup()
 
