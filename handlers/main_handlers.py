@@ -87,7 +87,7 @@ async def sign_up_step4(callback:CallbackQuery, state:FSMContext)->None:
         await state.clear()
         return
     await callback.message.edit_text(
-        f"Ваша запись:\nимя питомца: {data['dog_name']}\nдата: {data['date']}\nвремя: {data['time']}")
+        f"Ваша запись:\nимя питомца: {data['dog_name']}\nдата: {data['date']}\nвремя: {data['time']}:00")
     try:
         await callback.message.bot.send_message(chat_id=admin_chat,
                                                 text = f"Новая запись на выгул!\n"
@@ -95,7 +95,7 @@ async def sign_up_step4(callback:CallbackQuery, state:FSMContext)->None:
                                                        f"Юзернейм клиента: @{callback.from_user.username or 'нет юзернейма'}\n"
                                                        f"имя питомца: {data['dog_name']}\n"
                                                        f"дата: {data['date']}\n"
-                                                       f"время: {data['time']}")
+                                                       f"время: {data['time']}:00")
     except TelegramAPIError as e:
         print('не удалось уведомить владелицу о записи. Пожалуйста, проверьте новые записи в базе данных.')
     await state.clear()

@@ -1,0 +1,9 @@
+.env
+data.db
+data/
+venv/
+__pycache__/
+.git/
+.gitignore
+.idea/
+.vscode/

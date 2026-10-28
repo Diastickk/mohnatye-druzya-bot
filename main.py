@@ -8,7 +8,10 @@ from handlers.admin_handlers import admin_rt
 from handlers.main_handlers import rt
 
 from db import init_db
+import logging
 #========================Инициализация======================
+logging.basicConfig(level=logging.INFO)
+
 init_db()
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
