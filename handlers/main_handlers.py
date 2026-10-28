@@ -81,7 +81,11 @@ async def sign_up_step4(callback:CallbackQuery, state:FSMContext)->None:
     time = callback.data.split(':')[1]
     await state.update_data(time = time)
     data = await state.get_data()
-    insert_order(callback.from_user.full_name,callback.from_user.username or 'нет юзернейма', data['dog_name'], data['date'], data['time'])
+    saved = insert_order(callback.from_user.full_name, callback.from_user.username or 'нет юзернейма',data['dog_name'], data['date'], data['time'])
+    if not saved:
+        await callback.message.edit_text('К сожалению, это время уже занято. Начните запись заново: /start')
+        await state.clear()
+        return
     await callback.message.edit_text(
         f"Ваша запись:\nимя питомца: {data['dog_name']}\nдата: {data['date']}\nвремя: {data['time']}")
     try:

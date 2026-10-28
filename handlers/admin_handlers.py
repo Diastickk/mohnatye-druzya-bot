@@ -56,12 +56,12 @@ async def select_order_for_delete (callback: CallbackQuery,state:FSMContext)->No
 @admin_rt.message(DeleteOrderState.order_id)
 async def delete_selected_order (message:Message,state:FSMContext)->None:
     try:
-        delete_order(int(message.text))
+        is_deleted = delete_order(int(message.text))
     except (ValueError, TypeError):
         await message.answer(text='Пожалуйста, введите число')
         return
-    await message.answer(text=f'Запись номер {message.text} удалена!')
-    await state.clear()
+    if is_deleted : await message.answer(text=f'Запись номер {message.text} удалена!'); await state.clear()
+    else:await message.answer(text='записи с таким номером нет.')
 
 #===============================Меню изменения услуг==================================
 @admin_rt.callback_query(F.data == 'change_services')
@@ -71,6 +71,7 @@ async def change_services_menu (callback: CallbackQuery, state:FSMContext)->None
     services_list = get_services()
     if not services_list:
         await callback.message.answer('Список услуг пока пуст.', reply_markup=services_keyboard())
+        await state.clear()
         return
     for service in services_list:
         full_text+=f'''услуга номер {service[0]}:
@@ -80,6 +81,7 @@ async def change_services_menu (callback: CallbackQuery, state:FSMContext)->None
 '''
     await callback.message.answer(text = full_text, reply_markup=services_keyboard())
     await state.clear()
+
 #==================================удаление услуги====================================
 @admin_rt.callback_query(F.data == 'remove_service')
 async def remove_service (callback: CallbackQuery, state:FSMContext)->None:
